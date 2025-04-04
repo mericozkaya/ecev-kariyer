@@ -8,6 +8,13 @@ export type Intern = {
   createdAt: Date;
 };
 
+import { deleteDoc, doc } from "firebase/firestore";
+
+export const deleteIntern = async (id: string) => {
+  await deleteDoc(doc(db, "interns", id));
+};
+
+
 // Firebase SDK'larını import ediyoruz
 import { initializeApp } from "firebase/app";
 import {
