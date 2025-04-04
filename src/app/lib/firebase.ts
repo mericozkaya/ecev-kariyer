@@ -86,13 +86,14 @@ export const getInterns = async (): Promise<Intern[]> => {
   const internSnapshot = await getDocs(internsCollection);
 
   const internList = internSnapshot.docs.map((doc) => ({
-    ...doc.data(),
+    ...(doc.data() as Omit<Intern, "id" | "createdAt">),
     id: doc.id,
     createdAt: doc.data().createdAt?.toDate() || new Date(),
-  })) as Intern[];
+  }));
 
   return internList;
 };
+
 
 
 //
