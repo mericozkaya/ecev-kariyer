@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-type Intern = {
+export type Intern = {
   id: string;
   name: string;
   department: string;
