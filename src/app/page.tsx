@@ -42,7 +42,7 @@ export default function HomePage() {
             <h1 className="text-2xl sm:text-3xl font-semibold text-[#d71a28]">Eçev Kariyer</h1>
           </div>
           <nav className="w-full mt-4 sm:mt-0 sm:w-auto flex flex-col sm:flex-row sm:space-x-6 text-[#0057A0] font-medium items-center sm:items-end">
-            <a href="#interns" className="py-1">Anasayfa</a>
+            <a href="#interns" className="py-1">Öğrencilerimiz</a>
             <a href="#about" className="py-1">Biz Kimiz?</a>
             <a href="#contact" className="py-1">İletişim</a>
           </nav>
