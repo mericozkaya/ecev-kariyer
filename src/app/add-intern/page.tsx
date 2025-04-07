@@ -1,30 +1,51 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { addIntern, getDepartments } from '../lib/firebase';
+import {
+  addIntern,
+  getDepartments,
+  ensureDepartmentExists,
+  getInterns,
+  deleteIntern,
+  type Intern,
+} from '../../lib/firebase/firebase';
 
 export default function AddInternPage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [departments, setDepartments] = useState<string[]>([]);
+  const [interns, setInterns] = useState<Intern[]>([]);
   const [name, setName] = useState('');
   const [department, setDepartment] = useState('');
   const [bio, setBio] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const [newDepartment, setNewDepartment] = useState('');
+  const [isAddingDepartment, setIsAddingDepartment] = useState(false);
+  const [departmentMessage, setDepartmentMessage] = useState('');
 
   useEffect(() => {
     const saved = localStorage.getItem('admin-auth');
     if (saved === 'true') setAuthenticated(true);
   }, []);
 
+  const fetchDepartments = async () => {
+    const data = await getDepartments();
+    setDepartments(data);
+  };
+
+  const fetchInterns = async () => {
+    const data = await getInterns();
+    setInterns(data);
+  };
+
   useEffect(() => {
-    const fetchDepartments = async () => {
-      const data = await getDepartments();
-      setDepartments(data);
-    };
     fetchDepartments();
+    fetchInterns();
   }, []);
 
   const handleLogin = () => {
@@ -51,6 +72,7 @@ export default function AddInternPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (!photoFile || !cvFile) {
       return alert('Lütfen hem fotoğraf hem CV yükleyin.');
@@ -75,16 +97,58 @@ export default function AddInternPage() {
         return alert('CV sadece PDF formatında olmalı.');
       }
 
-      await addIntern(name, department, bio, photoFile, cvFile);
-      alert('✅ Stajyer başarıyla eklendi!');
-
-      setName('');
-      setDepartment('');
-      setBio('');
-      setPhotoFile(null);
-      setCvFile(null);
-      setPhotoPreview(null);
+      try {
+        setIsSubmitting(true);
+        setMessage('Kaydediliyor...');
+        await addIntern(name, department, bio, photoFile, cvFile);
+        setMessage('✅ Stajyer başarıyla eklendi!');
+        setName('');
+        setDepartment('');
+        setBio('');
+        setPhotoFile(null);
+        setCvFile(null);
+        setPhotoPreview(null);
+        fetchDepartments();
+        fetchInterns();
+      } catch (err) {
+        alert('Bir hata oluştu.');
+      } finally {
+        setIsSubmitting(false);
+        setTimeout(() => setMessage(''), 3000);
+      }
     };
+  };
+
+  const handleAddDepartment = async () => {
+    if (!newDepartment.trim()) {
+      setDepartmentMessage('Lütfen bir bölüm adı girin.');
+      return;
+    }
+
+    try {
+      setIsAddingDepartment(true);
+      await ensureDepartmentExists(newDepartment.trim());
+      setDepartmentMessage('✅ Bölüm eklendi veya zaten mevcut.');
+      setNewDepartment('');
+      fetchDepartments();
+    } catch (err) {
+      setDepartmentMessage('❌ Bir hata oluştu.');
+    } finally {
+      setIsAddingDepartment(false);
+      setTimeout(() => setDepartmentMessage(''), 3000);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Bu stajyeri silmek istediğinize emin misiniz?")) return;
+
+    try {
+      await deleteIntern(id);
+      setInterns((prev) => prev.filter((i) => i.id !== id));
+      alert("Stajyer başarıyla silindi.");
+    } catch (err) {
+      alert("Bir hata oluştu.");
+    }
   };
 
   if (!authenticated) {
@@ -109,82 +173,78 @@ export default function AddInternPage() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="max-w-xl mx-auto mt-10 space-y-4 p-6 border border-[#d71a28] rounded-xl bg-white shadow-md text-black"
-    >
-      <h1 className="text-2xl font-bold text-center text-[#d71a28]">Yeni Stajyer Ekle</h1>
-
-      <input
-        type="text"
-        placeholder="Ad Soyad"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="w-full border p-2 rounded-md"
-        required
-      />
-
-      <select
-        value={department}
-        onChange={(e) => setDepartment(e.target.value)}
-        className="w-full border p-2 rounded-md"
-        required
+    <div className="max-w-xl mx-auto mt-10 space-y-10 p-6 text-black">
+      {/* STAJYER EKLEME */}
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 border border-[#d71a28] rounded-xl bg-white shadow-md p-6"
       >
-        <option value="">Bölüm Seçin</option>
-        {departments.map((dept) => (
-          <option key={dept} value={dept}>
-            {dept}
-          </option>
-        ))}
-      </select>
+        <h1 className="text-2xl font-bold text-center text-[#d71a28]">Yeni Stajyer Ekle</h1>
+        {message && <p className="text-center text-sm text-green-600 font-medium">{message}</p>}
 
-      <textarea
-        placeholder="Tanıtım Yazısı"
-        value={bio}
-        onChange={(e) => setBio(e.target.value)}
-        className="w-full border p-2 rounded-md"
-        required
-      />
+        <input type="text" placeholder="Ad Soyad" value={name} onChange={(e) => setName(e.target.value)} className="w-full border p-2 rounded-md" required />
 
-      <div>
-        <label className="block font-medium">Fotoğraf:</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => handlePhotoChange(e.target.files?.[0] || null)}
-          className="mt-1"
-          required
-        />
-        {photoPreview && (
-          <img
-            src={photoPreview}
-            alt="Önizleme"
-            className="mt-2 w-full h-48 object-cover rounded"
-          />
-        )}
-        <p className="text-sm text-gray-500 mt-1">• En az 300x300px • JPG veya PNG • Maks. 2MB</p>
+        <select value={department} onChange={(e) => setDepartment(e.target.value)} className="w-full border p-2 rounded-md" required>
+          <option value="">Bölüm Seçin</option>
+          {departments.map((dept) => (
+            <option key={dept} value={dept}>{dept}</option>
+          ))}
+        </select>
+
+        <textarea placeholder="Tanıtım Yazısı" value={bio} onChange={(e) => setBio(e.target.value)} className="w-full border p-2 rounded-md" required />
+
+        <div>
+          <label className="block font-medium">Fotoğraf:</label>
+          <input type="file" accept="image/*" onChange={(e) => handlePhotoChange(e.target.files?.[0] || null)} className="mt-1" required />
+          {photoPreview && <img src={photoPreview} alt="Önizleme" className="mt-2 w-full h-48 object-cover rounded" />}
+          <p className="text-sm text-gray-500 mt-1">• En az 300x300px • JPG veya PNG • Maks. 2MB</p>
+        </div>
+
+        <div>
+          <label className="block font-medium">CV:</label>
+          <input type="file" accept=".pdf" onChange={(e) => setCvFile(e.target.files?.[0] || null)} className="mt-1" required />
+          {cvFile && <p className="text-sm text-gray-700 mt-1">Yüklenen dosya: {cvFile.name}</p>}
+        </div>
+
+        <button type="submit" disabled={isSubmitting} className={`w-full px-4 py-2 rounded text-white transition ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#d71a28] hover:bg-[#a30f19]'}`}>
+          {isSubmitting ? 'Kaydediliyor...' : 'Kaydet'}
+        </button>
+      </form>
+
+      {/* YENİ BÖLÜM EKLEME */}
+      <div className="space-y-4 border border-[#0057A0] rounded-xl bg-white shadow-md p-6">
+        <h2 className="text-xl font-bold text-center text-[#0057A0]">Yeni Bölüm Ekle</h2>
+        {departmentMessage && <p className="text-center text-sm text-green-600 font-medium">{departmentMessage}</p>}
+        <input type="text" placeholder="Yeni bölüm adı" value={newDepartment} onChange={(e) => setNewDepartment(e.target.value)} className="w-full border p-2 rounded-md" />
+        <button onClick={handleAddDepartment} disabled={isAddingDepartment} className={`w-full px-4 py-2 rounded text-white transition ${isAddingDepartment ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#0057A0] hover:bg-[#004070]'}`}>
+          {isAddingDepartment ? 'Ekleniyor...' : 'Bölüm Ekle'}
+        </button>
       </div>
 
-      <div>
-        <label className="block font-medium">CV:</label>
-        <input
-          type="file"
-          accept=".pdf"
-          onChange={(e) => setCvFile(e.target.files?.[0] || null)}
-          className="mt-1"
-          required
-        />
-        {cvFile && (
-          <p className="text-sm text-gray-700 mt-1">Yüklenen dosya: {cvFile.name}</p>
+      {/* STAJYER SİLME */}
+      <div className="space-y-4 border border-red-400 rounded-xl bg-white shadow-md p-6">
+        <h2 className="text-xl font-bold text-center text-red-600">Stajyer Listesi (Silme)</h2>
+        {interns.length === 0 ? (
+          <p className="text-gray-500 text-center">Henüz hiç stajyer eklenmemiş.</p>
+        ) : (
+          <ul className="space-y-4">
+            {interns.map((intern) => (
+              <li key={intern.id} className="flex items-center justify-between border p-2 rounded">
+                <div>
+                  <p className="font-medium">{intern.name}</p>
+                  <p className="text-sm text-gray-500">{intern.department}</p>
+                </div>
+                <button
+                  onClick={() => handleDelete(intern.id)}
+                  className="text-sm bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded"
+                >
+                  Sil
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
-
-      <button
-        type="submit"
-        className="bg-[#d71a28] text-white px-4 py-2 rounded hover:bg-[#a30f19]"
-      >
-        Kaydet
-      </button>
-    </form>
+    </div>
   );
 }

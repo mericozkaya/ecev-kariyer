@@ -1,27 +1,13 @@
-export type Intern = {
-  id: string;
-  name: string;
-  department: string;
-  bio: string;
-  photoURL: string;
-  cvURL: string;
-  createdAt: Date;
-};
-
-import { deleteDoc, doc } from "firebase/firestore";
-
-export const deleteIntern = async (id: string) => {
-  await deleteDoc(doc(db, "interns", id));
-};
-
-
-// Firebase SDK'larını import ediyoruz
 import { initializeApp } from "firebase/app";
 import {
   getFirestore,
   collection,
   addDoc,
   getDocs,
+  deleteDoc,
+  doc,
+  query,
+  where,
   Timestamp,
 } from "firebase/firestore";
 import {
@@ -43,14 +29,42 @@ const firebaseConfig = {
 
 // Firebase'i başlat
 const app = initializeApp(firebaseConfig);
-
-// Firestore ve Storage referanslarını oluştur
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-//
-// 🔴 STAJYER EKLEME
-//
+// Tip tanımı
+export type Intern = {
+  id: string;
+  name: string;
+  department: string;
+  bio: string;
+  photoURL: string;
+  cvURL: string;
+  createdAt: Date;
+};
+
+// 🔴 Stajyer Silme
+export const deleteIntern = async (id: string) => {
+  await deleteDoc(doc(db, "interns", id));
+};
+
+// 🔵 Bölüm kontrol: Yoksa ekle ve sıralama yap
+export const ensureDepartmentExists = async (name: string) => {
+  const departmentsRef = collection(db, "departments");
+  const q = query(departmentsRef, where("name", "==", name));
+  const snapshot = await getDocs(q);
+
+  if (snapshot.empty) {
+    await addDoc(departmentsRef, { name });
+    console.log(`Yeni bölüm eklendi: ${name}`);
+
+    // Yeni eklenen bölümü ekledikten sonra tüm bölümleri alıp sıralayalım
+    const departments = await getDepartments();
+    console.log("Alfabetik sıralanmış bölümler:", departments);
+  }
+};
+
+// 🔴 Stajyer Ekleme
 export const addIntern = async (
   name: string,
   department: string,
@@ -59,6 +73,9 @@ export const addIntern = async (
   cvFile: File | null
 ) => {
   try {
+    // Departman kontrolü ve gerekirse ekleme
+    await ensureDepartmentExists(department);
+
     // Fotoğraf yükle
     const photoRef = ref(storage, `photos/${photoFile?.name}`);
     await uploadBytes(photoRef, photoFile as Blob);
@@ -85,9 +102,7 @@ export const addIntern = async (
   }
 };
 
-//
-// 🟢 TÜM STAJYERLERİ AL
-//
+// 🟢 Tüm stajyerleri al
 export const getInterns = async (): Promise<Intern[]> => {
   const internsCollection = collection(db, "interns");
   const internSnapshot = await getDocs(internsCollection);
@@ -101,17 +116,16 @@ export const getInterns = async (): Promise<Intern[]> => {
   return internList;
 };
 
-
-
-//
-// 🔵 TÜM BÖLÜMLERİ AL
-//
+// 🔵 TÜM BÖLÜMLERİ AL (ALFABETİK SIRALAMALI)
 export const getDepartments = async (): Promise<string[]> => {
   const snapshot = await getDocs(collection(db, "departments"));
-  return snapshot.docs.map((doc) => doc.data().name);
+  const departments = snapshot.docs.map((doc) => doc.data().name);
+
+  // Alfabetik sıraya göre sıralama
+  departments.sort((a, b) => a.localeCompare(b));
+
+  return departments;
 };
 
-//
-// 🔚 Firebase bağlantılarını dışa aktar
-//
+// Firebase bağlantıları dışa aktar
 export { db, storage };
