@@ -16,11 +16,11 @@ type InternProps = {
     return (
       <div className="bg-white shadow-md rounded-lg overflow-hidden w-full max-w-sm border transition duration-200 hover:shadow-lg flex flex-col">
         {/* Görsel */}
-        <div className="w-full h-[250px] overflow-hidden">
+        <div className="w-full aspect-[3/2] overflow-hidden rounded-md mb-4">
           <img
             src={photoURL}
             alt={name}
-            className="w-full h-full object-cover object-top"
+            className="w-full h-full object-cover"
           />
         </div>
   

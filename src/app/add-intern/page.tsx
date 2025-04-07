@@ -89,8 +89,8 @@ export default function AddInternPage() {
     const imgCheck = new Image();
     imgCheck.src = URL.createObjectURL(photoFile);
     imgCheck.onload = async () => {
-      if (imgCheck.width < 300 || imgCheck.height < 300) {
-        return alert('Fotoğraf çözünürlüğü en az 300x300 piksel olmalı.');
+      if (imgCheck.width < 300 || imgCheck.height < 200) {
+        return alert('Fotoğraf çözünürlüğü en az 300x200 piksel olmalı.');
       }
 
       if (cvFile.type !== 'application/pdf') {
