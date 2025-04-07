@@ -73,51 +73,45 @@ export default function AddInternPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
-
+  
     if (!photoFile || !cvFile) {
       return alert('Lütfen hem fotoğraf hem CV yükleyin.');
     }
-
+  
     if (!['image/jpeg', 'image/png'].includes(photoFile.type)) {
       return alert('Sadece JPG veya PNG formatında fotoğraf yükleyin.');
     }
-
+  
     if (photoFile.size > 2 * 1024 * 1024) {
       return alert('Fotoğraf dosyası 2MB’den büyük olamaz.');
     }
-
-    const imgCheck = new Image();
-    imgCheck.src = URL.createObjectURL(photoFile);
-    imgCheck.onload = async () => {
-      if (imgCheck.width < 300 || imgCheck.height < 200) {
-        return alert('Fotoğraf çözünürlüğü en az 300x200 piksel olmalı.');
-      }
-
-      if (cvFile.type !== 'application/pdf') {
-        return alert('CV sadece PDF formatında olmalı.');
-      }
-
-      try {
-        setIsSubmitting(true);
-        setMessage('Kaydediliyor...');
-        await addIntern(name, department, bio, photoFile, cvFile);
-        setMessage('✅ Stajyer başarıyla eklendi!');
-        setName('');
-        setDepartment('');
-        setBio('');
-        setPhotoFile(null);
-        setCvFile(null);
-        setPhotoPreview(null);
-        fetchDepartments();
-        fetchInterns();
-      } catch (err) {
-        alert('Bir hata oluştu.');
-      } finally {
-        setIsSubmitting(false);
-        setTimeout(() => setMessage(''), 3000);
-      }
-    };
+  
+    if (cvFile.type !== 'application/pdf') {
+      return alert('CV sadece PDF formatında olmalı.');
+    }
+  
+    try {
+      setIsSubmitting(true);
+      setMessage('Kaydediliyor...');
+      await addIntern(name, department, bio, photoFile, cvFile);
+      setMessage('✅ Stajyer başarıyla eklendi!');
+      setName('');
+      setDepartment('');
+      setBio('');
+      setPhotoFile(null);
+      setCvFile(null);
+      setPhotoPreview(null);
+      fetchDepartments();
+      fetchInterns();
+    } catch (err) {
+      alert('Bir hata oluştu.');
+    } finally {
+      setIsSubmitting(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
   };
+  
+  
 
   const handleAddDepartment = async () => {
     if (!newDepartment.trim()) {
@@ -197,7 +191,7 @@ export default function AddInternPage() {
           <label className="block font-medium">Fotoğraf:</label>
           <input type="file" accept="image/*" onChange={(e) => handlePhotoChange(e.target.files?.[0] || null)} className="mt-1" required />
           {photoPreview && <img src={photoPreview} alt="Önizleme" className="mt-2 w-full h-48 object-cover rounded" />}
-          <p className="text-sm text-gray-500 mt-1">• En az 300x300px • JPG veya PNG • Maks. 2MB</p>
+          <p className="text-sm text-gray-500 mt-1">• JPG veya PNG • Maks. 2MB</p>
         </div>
 
         <div>
