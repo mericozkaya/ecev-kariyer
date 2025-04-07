@@ -49,7 +49,7 @@ export default function HomePage() {
         </header>
 
         {/* Bölüm Seçim Dropdown */}
-        <div className="mt-6">
+        <div className="mt-6 mb-4">
           <select
             className="border border-[#d71a28] px-3 py-2 rounded-md w-full max-w-md"
             onChange={(e) => setSelectedDepartment(e.target.value)}
