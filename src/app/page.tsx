@@ -67,7 +67,7 @@ export default function HomePage() {
         {/* Stajyer Kartları */}
         <section
           id="interns"
-          className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+          className="scroll-mt-28 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
         >
           {filteredInterns.map((intern) => (
             <div
