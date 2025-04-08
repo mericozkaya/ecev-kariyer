@@ -1,4 +1,5 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import { getInterns } from '../lib/firebase/firebase';
 import InternCard from './InternCard';
